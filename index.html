@@ -198,7 +198,7 @@
 
 <main id="app" data-stage="env">
   <div class="brand"><img id="brandLogo" alt=""><span>Meow Meow 课堂</span></div>
-  <p class="demo" id="demo" hidden>Cảm ơn bạn đã tham gia lớp học Meow Meow trong thời gian qua</p>
+  <p class="demo" id="demo" hidden>Bản xem thử với tên mẫu. Link gửi học viên được tạo ở trang của giáo viên.</p>
 
   <div class="stage">
     <!-- 1. Phong bì -->
@@ -275,7 +275,7 @@
     <!-- Link lỗi -->
     <section class="s-bad" aria-label="Link chưa dùng được">
       <article class="letter">
-        <h1>Chưa mở được thư</h1>
+        <h1 id="badTitle">Chưa mở được thư</h1>
         <p id="badMsg">Link này chưa đầy đủ. Hãy nhờ giáo viên gửi lại link mới.</p>
       </article>
     </section>
@@ -290,7 +290,7 @@ var Cert = (function () {
   var F_SCRIPT = "'Dancing Script', 'Pacifico', cursive";
   var F_COND = "'Barlow Condensed', 'Oswald', 'Arial Narrow', sans-serif";
   var F_HAN = "'Noto Serif SC', 'Songti SC', serif";
-  var SAMPLE = 'Nguyễn Minh Anh';
+  var SAMPLE = 'Nguyễn Thu Hương';
   var DK_OUT = '#EADB96', DK_OUT2 = '#CDB866';
 
   /* Thứ tự này nằm trong link, không đổi vị trí các mẫu đã có */
@@ -937,28 +937,38 @@ var Exporter = (function () {
     var demo = false;
     if (/^c-[a-z2-7]+$/.test(h)) state = Cert.decode(h.slice(2));
     else if (/^s-[a-z0-9]{4,16}$/.test(h) && CFG.supabaseUrl && CFG.supabaseKey) {
-      $('demo').hidden = true; $('badMsg').textContent = 'Đang mở thư của bạn...'; setStage('bad');
+      $('demo').hidden = true;
       var myTok = ++initTok;
+      var settled = false;
+      setStage('loading');
+      later(function () {
+        if (myTok === initTok && !state && !settled) { $('badTitle').textContent = 'Đang mở thư cho bạn...'; $('badMsg').textContent = 'Chờ một chút nhé.'; setStage('bad'); }
+      }, 700);
+      var fail = function (msg) { settled = true; $('badTitle').textContent = 'Chưa mở được thư'; $('badMsg').textContent = msg; setStage('bad'); };
       fetch(CFG.supabaseUrl.replace(/\/$/, '') + '/rest/v1/rpc/get_cert', {
         method: 'POST',
         headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + CFG.supabaseKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ p_id: h.slice(2) })
-      }).then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
+      }).then(function (r) {
+        if (!r.ok) throw new Error('mã ' + r.status);
+        return r.json();
+      }).then(function (data) {
         if (myTok !== initTok) return;
         var st = (typeof data === 'string') ? Cert.decode(data) : null;
-        if (st) { state = st; begin(); }
-        else $('badMsg').textContent = 'Không tìm thấy thư này. Hãy nhờ giáo viên gửi lại link.';
-      }).catch(function () {
-        if (myTok === initTok) $('badMsg').textContent = 'Không tải được thư. Kiểm tra mạng rồi mở lại link nhé.';
+        if (st) { settled = true; state = st; begin(); }
+        else fail('Không tìm thấy thư này. Hãy nhờ giáo viên gửi lại link.');
+      }).catch(function (e) {
+        if (myTok === initTok) fail('Không tải được thư (' + ((e && e.message) || 'lỗi mạng') + '). Kiểm tra mạng rồi mở lại link nhé.');
       });
       return;
     }
     else if (!h) {
       var d = new Date(); demo = true;
-      state = { level: 'HSK 4', name: 'Nguyễn Minh Anh', date: d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日', theme: 'butter', sig: [], letter: '', closing: '', placeholder: false };
+      state = { level: 'HSK 4', name: 'Nguyễn Thu Hương', date: d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日', theme: 'butter', sig: [], letter: '', closing: '', placeholder: false };
     }
     $('demo').hidden = !demo;
     if (!state) {
+      $('badTitle').textContent = 'Chưa mở được thư';
       $('badMsg').textContent = h ? 'Link này chưa đầy đủ hoặc đã bị cắt bớt. Hãy nhờ giáo viên gửi lại link mới.' : 'Hãy mở bằng đúng đường link mà giáo viên đã gửi cho bạn.';
       setStage('bad'); return;
     }
