@@ -198,7 +198,7 @@
 
 <main id="app" data-stage="env">
   <div class="brand"><img id="brandLogo" alt=""><span>Meow Meow 课堂</span></div>
-  <p class="demo" id="demo" hidden>Bản xem thử với tên mẫu. Link gửi học viên được tạo ở trang của giáo viên.</p>
+  <p class="demo" id="demo" hidden>Cảm ơn bạn đã tham gia lớp học Meow Meow trong thời gian qua</p>
 
   <div class="stage">
     <!-- 1. Phong bì -->
@@ -373,6 +373,27 @@ var Cert = (function () {
     for (i = 0; i < chars.length; i++) { ctx.fillText(chars[i], x, y); x += ctx.measureText(chars[i]).width + sp; }
     ctx.textAlign = prev;
   }
+  var LV_GAP = 20;
+  function lvParts(lvl) {
+    var m = String(lvl).match(/^(\D*?)\s*(\d+)$/);
+    return m && m[1] ? [m[1], m[2]] : [String(lvl).replace(/\s+/g, ' ')];
+  }
+  function lvlWidth(ctx, lvl) {
+    var p = lvParts(lvl);
+    return p.length === 2 ? spacedWidth(ctx, p[0], 8) + LV_GAP + spacedWidth(ctx, p[1], 8) : spacedWidth(ctx, p[0], 8);
+  }
+  function spacedLvl(ctx, lvl, cx, y) {
+    var p = lvParts(lvl);
+    if (p.length < 2) { spaced(ctx, p[0], cx, y, 8); return; }
+    var w1 = spacedWidth(ctx, p[0], 8), w2 = spacedWidth(ctx, p[1], 8), left = cx - (w1 + LV_GAP + w2) / 2;
+    spaced(ctx, p[0], left + w1 / 2, y, 8);
+    spaced(ctx, p[1], left + w1 + LV_GAP + w2 / 2, y, 8);
+  }
+  function zhLevel(lvl) {
+    var m = String(lvl).match(/\d+/), n = m ? parseInt(m[0], 10) : 0;
+    var Z = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    return (n >= 1 && n <= 9) ? Z[n] + '级' : '';
+  }
   function fit(ctx, text, family, weight, maxW, start, min) {
     var s = start;
     for (;;) {
@@ -518,11 +539,11 @@ var Cert = (function () {
 
     ctx.font = '700 104px ' + F_COND;
     var lvl = o.level || 'HSK 4';
-    var hw = spacedWidth(ctx, lvl, 8);
+    var hw = lvlWidth(ctx, lvl);
     ctx.fillStyle = P.cream; ctx.globalAlpha = 0.18;
-    spaced(ctx, lvl, cx + 4, 568, 8);
+    spacedLvl(ctx, lvl, cx + 4, 568);
     ctx.globalAlpha = 1; ctx.fillStyle = P.hsk;
-    spaced(ctx, lvl, cx, 564, 8);
+    spacedLvl(ctx, lvl, cx, 564);
     ctx.globalAlpha = L ? 0.7 : 0.5;
     paw(ctx, cx - hw / 2 - 46, 536, 0.7, -0.4, P.pink);
     paw(ctx, cx + hw / 2 + 46, 536, 0.7, 0.4, P.pink);
@@ -530,7 +551,7 @@ var Cert = (function () {
 
     ctx.fillStyle = P.gold; ctx.textAlign = 'center';
     ctx.font = '700 18px ' + F_HAN;
-    spaced(ctx, '汉语水平考试 · 四级', cx, 594, 5);
+    spaced(ctx, zhLevel(lvl) ? '汉语水平考试 · ' + zhLevel(lvl) : '汉语水平考试', cx, 594, 5);
 
     seal(ctx, cx, 654, 38, P.gold, P.panel);
 
@@ -570,7 +591,7 @@ var Cert = (function () {
       document.fonts.load('700 84px "Dancing Script"', t + ' đã hoàn thành khóa học tiếng Trung'),
       document.fonts.load('600 48px "Barlow Condensed"', 'CHỨNG NHẬN HOÀN THÀNH KHÓA HỌC TRAO CHO HỌC VIÊN MEOW 0123456789'),
       document.fonts.load('700 104px "Barlow Condensed"', 'HSK 4'),
-      document.fonts.load('700 24px "Noto Serif SC"', '结业证书完成汉语水平考试四级颁发日期课堂' + (date || ''))
+      document.fonts.load('700 24px "Noto Serif SC"', '结业证书完成汉语水平考试一二三四五六七八九级颁发日期课堂' + (date || ''))
     ]).catch(function () {});
   }
 
@@ -734,7 +755,7 @@ var Exporter = (function () {
 <script>
 (function () {
   /* ===== CẤU HÌNH: điền giống bên admin.html để mở được link ngắn (#s-...) ===== */
-  var CFG = { supabaseUrl: '', supabaseKey: '' };
+  var CFG = { supabaseUrl: 'https://jgnpytonisdvwvevxwyg.supabase.co', supabaseKey: 'sb_publishable_9DBHlmprrP-YneHz6Ldfxg_OkeZmfBs' };
   var $ = function (id) { return document.getElementById(id); };
   var root = document.documentElement, app = $('app');
   var env = $('env'), envWrap = $('envWrap'), scroll = $('scroll'), paper = $('paper'), actions = $('actions');
@@ -744,7 +765,7 @@ var Exporter = (function () {
 
   var state = null, p = 0, cwPx = 800, timers = [], raf = 0;
   function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
-  function clearAll() { timers.forEach(clearTimeout); timers = []; if (raf) cancelAnimationFrame(raf); raf = 0; }
+  function clearAll() { timers.forEach(clearTimeout); timers = []; if (raf) cancelAnimationFrame(raf); raf = 0; stopConfetti(); }
   function setStage(s) { app.setAttribute('data-stage', s); }
 
   $('brandLogo').src = Cert.logoSrc; $('letterLogo').src = Cert.logoSrc;
@@ -782,6 +803,73 @@ var Exporter = (function () {
     });
   }
 
+  /* ---------- pháo giấy khi mở xong cuộn chứng nhận ---------- */
+  var cfCanvas = document.createElement('canvas'), cfCtx = cfCanvas.getContext('2d'), cfParts = [], cfRaf = 0, cfLast = 0;
+  cfCanvas.setAttribute('aria-hidden', 'true');
+  cfCanvas.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:60';
+  document.body.appendChild(cfCanvas);
+  function cfSize() {
+    var d = Math.min(window.devicePixelRatio || 1, 2);
+    cfCanvas.width = Math.round(window.innerWidth * d); cfCanvas.height = Math.round(window.innerHeight * d);
+    cfCtx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  window.addEventListener('resize', function () { if (cfParts.length) cfSize(); });
+  function cfBurst(x, y, deg, spread, n, cols) {
+    var h = window.innerHeight, i, a, sp;
+    for (i = 0; i < n; i++) {
+      a = (deg + (Math.random() - 0.5) * spread) * Math.PI / 180;
+      sp = h * (0.7 + Math.random() * 0.9);
+      cfParts.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: -Math.sin(a) * sp,
+        w: 6 + Math.random() * 7, h: 9 + Math.random() * 8, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 14,
+        ph: Math.random() * 6.28, fl: 6 + Math.random() * 6, color: cols[(Math.random() * cols.length) | 0],
+        round: Math.random() < 0.25, life: 0, max: 2.8 + Math.random() * 1.6 });
+    }
+  }
+  function cfRain(n, cols) {
+    var w = window.innerWidth, i;
+    for (i = 0; i < n; i++) {
+      cfParts.push({ x: Math.random() * w, y: -20 - Math.random() * 120, vx: (Math.random() - 0.5) * 120, vy: 80 + Math.random() * 160,
+        w: 6 + Math.random() * 7, h: 9 + Math.random() * 8, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 10,
+        ph: Math.random() * 6.28, fl: 5 + Math.random() * 5, color: cols[(Math.random() * cols.length) | 0],
+        round: Math.random() < 0.25, life: 0, max: 3.4 + Math.random() * 1.6 });
+    }
+  }
+  function cfStep(ts) {
+    var dt = Math.min(0.033, (ts - cfLast) / 1000) || 0.016, H = window.innerHeight, W = window.innerWidth, i, q, al;
+    cfLast = ts;
+    cfCtx.clearRect(0, 0, W, H);
+    for (i = cfParts.length - 1; i >= 0; i--) {
+      q = cfParts[i];
+      q.vy += 1000 * dt; q.vx -= q.vx * 1.1 * dt; q.vy -= q.vy * 0.9 * dt;
+      q.x += q.vx * dt; q.y += q.vy * dt; q.rot += q.vr * dt; q.life += dt;
+      if (q.life > q.max || q.y > H + 40) { cfParts.splice(i, 1); continue; }
+      al = q.life > q.max - 0.7 ? (q.max - q.life) / 0.7 : 1;
+      cfCtx.save(); cfCtx.globalAlpha = Math.max(0, al); cfCtx.translate(q.x, q.y); cfCtx.rotate(q.rot);
+      cfCtx.scale(1, Math.cos(q.life * q.fl + q.ph)); cfCtx.fillStyle = q.color;
+      if (q.round) { cfCtx.beginPath(); cfCtx.arc(0, 0, q.w / 2, 0, 6.2832); cfCtx.fill(); }
+      else cfCtx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h);
+      cfCtx.restore();
+    }
+    if (cfParts.length) cfRaf = requestAnimationFrame(cfStep);
+    else { cfRaf = 0; cfCtx.clearRect(0, 0, W, H); }
+  }
+  function stopConfetti() {
+    if (cfRaf) cancelAnimationFrame(cfRaf);
+    cfRaf = 0; cfParts = [];
+    cfCtx.clearRect(0, 0, cfCanvas.width, cfCanvas.height);
+  }
+  function fireConfetti() {
+    if (RM || !state) return;
+    var T = Cert.THEMES[Cert.themeIndex(state.theme)];
+    var cols = [T.gold, T.hsk, T.pink, '#FFD54F', '#FF8FA3', '#7FD1AE', '#6EC1F6', '#FFFFFF'];
+    var W = window.innerWidth, H = window.innerHeight;
+    stopConfetti(); cfSize();
+    cfBurst(0, H, 62, 38, 70, cols);
+    cfBurst(W, H, 118, 38, 70, cols);
+    later(function () { cfBurst(W * 0.5, H, 90, 60, 60, cols); cfRain(60, cols); }, 280);
+    if (!cfRaf) { cfLast = 0; cfRaf = requestAnimationFrame(cfStep); }
+  }
+
   function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
   function unroll() {
     var t0 = 0, dur = 2400;
@@ -790,7 +878,7 @@ var Exporter = (function () {
       var k = Math.min(1, (ts - t0) / dur);
       setP(ease(k));
       if (k < 1) raf = requestAnimationFrame(step);
-      else { raf = 0; actions.classList.add('show'); paper.classList.add('zoomable'); }
+      else { raf = 0; actions.classList.add('show'); paper.classList.add('zoomable'); fireConfetti(); }
     }
     raf = requestAnimationFrame(step);
   }
