@@ -269,6 +269,27 @@ var Cert = (function () {
     for (i = 0; i < chars.length; i++) { ctx.fillText(chars[i], x, y); x += ctx.measureText(chars[i]).width + sp; }
     ctx.textAlign = prev;
   }
+  var LV_GAP = 20;
+  function lvParts(lvl) {
+    var m = String(lvl).match(/^(\D*?)\s*(\d+)$/);
+    return m && m[1] ? [m[1], m[2]] : [String(lvl).replace(/\s+/g, ' ')];
+  }
+  function lvlWidth(ctx, lvl) {
+    var p = lvParts(lvl);
+    return p.length === 2 ? spacedWidth(ctx, p[0], 8) + LV_GAP + spacedWidth(ctx, p[1], 8) : spacedWidth(ctx, p[0], 8);
+  }
+  function spacedLvl(ctx, lvl, cx, y) {
+    var p = lvParts(lvl);
+    if (p.length < 2) { spaced(ctx, p[0], cx, y, 8); return; }
+    var w1 = spacedWidth(ctx, p[0], 8), w2 = spacedWidth(ctx, p[1], 8), left = cx - (w1 + LV_GAP + w2) / 2;
+    spaced(ctx, p[0], left + w1 / 2, y, 8);
+    spaced(ctx, p[1], left + w1 + LV_GAP + w2 / 2, y, 8);
+  }
+  function zhLevel(lvl) {
+    var m = String(lvl).match(/\d+/), n = m ? parseInt(m[0], 10) : 0;
+    var Z = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    return (n >= 1 && n <= 9) ? Z[n] + '级' : '';
+  }
   function fit(ctx, text, family, weight, maxW, start, min) {
     var s = start;
     for (;;) {
@@ -414,11 +435,11 @@ var Cert = (function () {
 
     ctx.font = '700 104px ' + F_COND;
     var lvl = o.level || 'HSK 4';
-    var hw = spacedWidth(ctx, lvl, 8);
+    var hw = lvlWidth(ctx, lvl);
     ctx.fillStyle = P.cream; ctx.globalAlpha = 0.18;
-    spaced(ctx, lvl, cx + 4, 568, 8);
+    spacedLvl(ctx, lvl, cx + 4, 568);
     ctx.globalAlpha = 1; ctx.fillStyle = P.hsk;
-    spaced(ctx, lvl, cx, 564, 8);
+    spacedLvl(ctx, lvl, cx, 564);
     ctx.globalAlpha = L ? 0.7 : 0.5;
     paw(ctx, cx - hw / 2 - 46, 536, 0.7, -0.4, P.pink);
     paw(ctx, cx + hw / 2 + 46, 536, 0.7, 0.4, P.pink);
@@ -426,7 +447,7 @@ var Cert = (function () {
 
     ctx.fillStyle = P.gold; ctx.textAlign = 'center';
     ctx.font = '700 18px ' + F_HAN;
-    spaced(ctx, '汉语水平考试 · 四级', cx, 594, 5);
+    spaced(ctx, zhLevel(lvl) ? '汉语水平考试 · ' + zhLevel(lvl) : '汉语水平考试', cx, 594, 5);
 
     seal(ctx, cx, 654, 38, P.gold, P.panel);
 
@@ -466,7 +487,7 @@ var Cert = (function () {
       document.fonts.load('700 84px "Dancing Script"', t + ' đã hoàn thành khóa học tiếng Trung'),
       document.fonts.load('600 48px "Barlow Condensed"', 'CHỨNG NHẬN HOÀN THÀNH KHÓA HỌC TRAO CHO HỌC VIÊN MEOW 0123456789'),
       document.fonts.load('700 104px "Barlow Condensed"', 'HSK 4'),
-      document.fonts.load('700 24px "Noto Serif SC"', '结业证书完成汉语水平考试四级颁发日期课堂' + (date || ''))
+      document.fonts.load('700 24px "Noto Serif SC"', '结业证书完成汉语水平考试一二三四五六七八九级颁发日期课堂' + (date || ''))
     ]).catch(function () {});
   }
 
